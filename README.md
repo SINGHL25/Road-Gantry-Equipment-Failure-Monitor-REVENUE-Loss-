@@ -1,4 +1,7 @@
 # Road-Gantry-Equipment-Failure-Monitor-REVENUE-Loss-
+
+https://claude.ai/public/artifacts/4ee0edd3-64e8-4f4f-bb88-d7602ec42710
+
 Road Gantry Equipment Failure Monitor Revenue loss confirmation 
 Key Features:
 🎛️ Interactive Controls
