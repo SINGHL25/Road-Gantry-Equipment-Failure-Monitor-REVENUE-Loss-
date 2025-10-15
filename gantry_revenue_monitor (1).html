@@ -1,0 +1,1202 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gantry Equipment & Revenue Monitor</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1600px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+        
+        .header p {
+            font-size: 1.1em;
+            opacity: 0.9;
+        }
+        
+        .nav-tabs {
+            display: flex;
+            background: #f5f7fa;
+            border-bottom: 2px solid #ddd;
+        }
+        
+        .nav-tab {
+            flex: 1;
+            padding: 18px;
+            text-align: center;
+            background: #f5f7fa;
+            border: none;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 600;
+            transition: all 0.3s;
+            color: #555;
+        }
+        
+        .nav-tab:hover {
+            background: #e9ecef;
+        }
+        
+        .nav-tab.active {
+            background: white;
+            color: #2a5298;
+            border-bottom: 3px solid #2a5298;
+        }
+        
+        .tab-content {
+            display: none;
+            padding: 30px;
+        }
+        
+        .tab-content.active {
+            display: block;
+        }
+        
+        .control-panel {
+            background: #f8f9fa;
+            padding: 25px;
+            border-radius: 10px;
+            margin-bottom: 30px;
+            border: 1px solid #dee2e6;
+        }
+        
+        .control-row {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+        
+        .control-group {
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .control-group label {
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: #495057;
+            font-size: 14px;
+        }
+        
+        .control-group select,
+        .control-group input {
+            padding: 10px;
+            border: 1px solid #ced4da;
+            border-radius: 5px;
+            font-size: 14px;
+            transition: border 0.3s;
+        }
+        
+        .control-group select:focus,
+        .control-group input:focus {
+            outline: none;
+            border-color: #2a5298;
+        }
+        
+        .btn-group {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+        }
+        
+        .btn {
+            padding: 12px 30px;
+            border: none;
+            border-radius: 5px;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+        
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+        }
+        
+        .btn-secondary:hover {
+            background: #5a6268;
+        }
+        
+        .btn-danger {
+            background: #dc3545;
+            color: white;
+        }
+        
+        .btn-danger:hover {
+            background: #c82333;
+        }
+        
+        .status-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .status-card {
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            border-left: 4px solid #2a5298;
+        }
+        
+        .status-card h3 {
+            font-size: 14px;
+            color: #6c757d;
+            margin-bottom: 10px;
+            text-transform: uppercase;
+        }
+        
+        .status-card .value {
+            font-size: 32px;
+            font-weight: bold;
+            color: #2a5298;
+        }
+        
+        .status-card .unit {
+            font-size: 14px;
+            color: #6c757d;
+            margin-left: 5px;
+        }
+        
+        .status-indicator {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+        
+        .status-online { background: #28a745; }
+        .status-warning { background: #ffc107; }
+        .status-offline { background: #dc3545; }
+        
+        .chart-container {
+            background: white;
+            padding: 25px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            margin-bottom: 30px;
+        }
+        
+        .chart-container h3 {
+            margin-bottom: 20px;
+            color: #2a5298;
+        }
+        
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            background: white;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        .data-table thead {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        
+        .data-table th,
+        .data-table td {
+            padding: 15px;
+            text-align: left;
+        }
+        
+        .data-table tbody tr:hover {
+            background: #f8f9fa;
+        }
+        
+        .data-table tbody tr {
+            border-bottom: 1px solid #dee2e6;
+        }
+        
+        .alert {
+            padding: 15px 20px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+        
+        .alert-success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        
+        .alert-warning {
+            background: #fff3cd;
+            color: #856404;
+            border: 1px solid #ffeaa7;
+        }
+        
+        .alert-danger {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        
+        .query-editor {
+            background: #282c34;
+            color: #abb2bf;
+            padding: 20px;
+            border-radius: 5px;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+            margin-bottom: 20px;
+            overflow-x: auto;
+        }
+        
+        .report-output {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 5px;
+            border: 1px solid #dee2e6;
+            max-height: 500px;
+            overflow-y: auto;
+        }
+        
+        .csv-input {
+            width: 100%;
+            min-height: 200px;
+            padding: 15px;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            border: 1px solid #ced4da;
+            border-radius: 5px;
+            margin-bottom: 15px;
+        }
+        
+        .architecture-diagram {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+        
+        .arch-layer {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            margin: 15px 0;
+            border-radius: 8px;
+            font-weight: 600;
+        }
+        
+        .arch-arrow {
+            font-size: 24px;
+            color: #2a5298;
+            margin: 10px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🛣️ Road Gantry Equipment & Revenue Monitor</h1>
+            <p>Real-time Equipment Health | Revenue Loss Analysis | Monthly Reporting</p>
+        </div>
+        
+        <div class="nav-tabs">
+            <button class="nav-tab active" onclick="switchTab('dashboard')">📊 Live Dashboard</button>
+            <button class="nav-tab" onclick="switchTab('analysis')">🔍 Revenue Analysis</button>
+            <button class="nav-tab" onclick="switchTab('reports')">📈 Monthly Reports</button>
+            <button class="nav-tab" onclick="switchTab('simulator')">🎮 Failure Simulator</button>
+            <button class="nav-tab" onclick="switchTab('architecture')">🏗️ Architecture</button>
+        </div>
+        
+        <!-- Dashboard Tab -->
+        <div id="dashboard" class="tab-content active">
+            <div class="control-panel">
+                <h2 style="margin-bottom: 20px;">Control Panel</h2>
+                <div class="control-row">
+                    <div class="control-group">
+                        <label>Road Selection</label>
+                        <select id="roadSelect">
+                            <option value="12">GLM - Gateway Motorway</option>
+                            <option value="1">ED - Eastern Distributor</option>
+                            <option value="2">LCT - Lane Cove Tunnel</option>
+                            <option value="3">M2 - M2 Motorway</option>
+                            <option value="7">CLEM7 - Clem7 Tunnel</option>
+                            <option value="13">SHBT - Sydney Harbour Bridge</option>
+                        </select>
+                    </div>
+                    <div class="control-group">
+                        <label>Gantry</label>
+                        <select id="gantrySelect">
+                            <option value="102">Gantry 102</option>
+                            <option value="103">Gantry 103</option>
+                            <option value="104">Gantry 104</option>
+                            <option value="105">Gantry 105</option>
+                        </select>
+                    </div>
+                    <div class="control-group">
+                        <label>Lane</label>
+                        <select id="laneSelect">
+                            <option value="1">Lane 1</option>
+                            <option value="2">Lane 2</option>
+                            <option value="3">Lane 3</option>
+                            <option value="4">Lane 4</option>
+                            <option value="5">Lane 5</option>
+                        </select>
+                    </div>
+                    <div class="control-group">
+                        <label>Time Window</label>
+                        <select id="timeWindow">
+                            <option value="1">Last 1 Hour</option>
+                            <option value="6">Last 6 Hours</option>
+                            <option value="24">Last 24 Hours</option>
+                            <option value="168">Last Week</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="btn-group">
+                    <button class="btn btn-primary" onclick="refreshDashboard()">🔄 Refresh Data</button>
+                    <button class="btn btn-secondary" onclick="exportReport()">📥 Export Report</button>
+                </div>
+            </div>
+            
+            <div class="status-grid">
+                <div class="status-card">
+                    <h3>Total Passages</h3>
+                    <div class="value">12,847<span class="unit">vehicles</span></div>
+                </div>
+                <div class="status-card">
+                    <h3>Active Lanes</h3>
+                    <div class="value">4<span class="unit">/ 5 lanes</span></div>
+                </div>
+                <div class="status-card">
+                    <h3>Equipment Health</h3>
+                    <div class="value">
+                        <span class="status-indicator status-online"></span>92<span class="unit">%</span>
+                    </div>
+                </div>
+                <div class="status-card" style="border-left-color: #dc3545;">
+                    <h3>Revenue Loss (Today)</h3>
+                    <div class="value" style="color: #dc3545;">$2,450<span class="unit">AUD</span></div>
+                </div>
+            </div>
+            
+            <div class="chart-container">
+                <h3>Passage Volume: Real-time vs Historical Baseline</h3>
+                <canvas id="passageChart"></canvas>
+            </div>
+            
+            <div class="chart-container">
+                <h3>Equipment Status Timeline</h3>
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Equipment ID</th>
+                            <th>Type</th>
+                            <th>Lane</th>
+                            <th>Status</th>
+                            <th>Last Update</th>
+                            <th>Uptime</th>
+                        </tr>
+                    </thead>
+                    <tbody id="equipmentTable">
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        
+        <!-- Revenue Analysis Tab -->
+        <div id="analysis" class="tab-content">
+            <div class="control-panel">
+                <h2 style="margin-bottom: 20px;">Revenue Loss Analysis</h2>
+                <div class="control-row">
+                    <div class="control-group">
+                        <label>Date From</label>
+                        <input type="date" id="dateFrom" value="2025-05-01">
+                    </div>
+                    <div class="control-group">
+                        <label>Date To</label>
+                        <input type="date" id="dateTo" value="2025-05-31">
+                    </div>
+                    <div class="control-group">
+                        <label>Equipment Type</label>
+                        <select id="equipmentType">
+                            <option value="VR_SU">VR SU (Video Recognition)</option>
+                            <option value="VDC_SU">VDC SU (Vehicle Detection)</option>
+                            <option value="CAMERA0">Camera 0</option>
+                            <option value="ITT">ITT Device</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="btn-group">
+                    <button class="btn btn-primary" onclick="runRevenueAnalysis()">🔍 Analyze Revenue Impact</button>
+                    <button class="btn btn-danger" onclick="simulateFailure()">⚠️ Simulate Failure Event</button>
+                </div>
+            </div>
+            
+            <div id="analysisAlert"></div>
+            
+            <div class="chart-container">
+                <h3>Revenue Loss Breakdown</h3>
+                <canvas id="revenueLossChart"></canvas>
+            </div>
+            
+            <div class="chart-container">
+                <h3>Detailed Analysis Results</h3>
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Time Window</th>
+                            <th>Lane</th>
+                            <th>Equipment</th>
+                            <th>Expected Passages</th>
+                            <th>Actual Passages</th>
+                            <th>Variance</th>
+                            <th>Est. Revenue Loss</th>
+                        </tr>
+                    </thead>
+                    <tbody id="analysisTable">
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        
+        <!-- Monthly Reports Tab -->
+        <div id="reports" class="tab-content">
+            <div class="control-panel">
+                <h2 style="margin-bottom: 20px;">Monthly Report Data Generator</h2>
+                <div class="control-row">
+                    <div class="control-group">
+                        <label>Road ID</label>
+                        <select id="reportRoadId">
+                            <option value="12">12 - GLM</option>
+                            <option value="1">1 - ED</option>
+                            <option value="2">2 - LCT</option>
+                            <option value="3">3 - M2</option>
+                            <option value="7">7 - CLEM7</option>
+                            <option value="13">13 - SHBT</option>
+                        </select>
+                    </div>
+                    <div class="control-group">
+                        <label>Report Month</label>
+                        <input type="month" id="reportMonth" value="2025-05">
+                    </div>
+                    <div class="control-group">
+                        <label>Report Type</label>
+                        <select id="reportType">
+                            <option value="NoReads">No Reads</option>
+                            <option value="Camera0">Camera 0</option>
+                            <option value="Class0">Class 0</option>
+                            <option value="ITT">ITT Detail</option>
+                            <option value="MatchingOCR">Matching OCR</option>
+                            <option value="PassagesAndTransactions">Passages & Transactions</option>
+                            <option value="PassagesByDay">Passages By Day</option>
+                            <option value="TransactionsByDay">Transactions By Day</option>
+                            <option value="PEC">PEC Reports</option>
+                            <option value="UnmatchTags">Unmatched Tags</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="btn-group">
+                    <button class="btn btn-primary" onclick="generateReportQuery()">📝 Generate SQL Query</button>
+                    <button class="btn btn-secondary" onclick="simulateReportData()">📊 Simulate Data</button>
+                </div>
+            </div>
+            
+            <div class="query-editor" id="sqlQuery"></div>
+            
+            <div class="control-panel">
+                <h3 style="margin-bottom: 15px;">CSV Data Input/Output</h3>
+                <textarea class="csv-input" id="csvData" placeholder="Paste CSV data here or generate sample data..."></textarea>
+                <div class="btn-group">
+                    <button class="btn btn-primary" onclick="parseCsvData()">📥 Parse & Visualize CSV</button>
+                    <button class="btn btn-secondary" onclick="generateSampleCsv()">🔄 Generate Sample CSV</button>
+                </div>
+            </div>
+            
+            <div class="chart-container">
+                <h3>Monthly Report Visualization</h3>
+                <canvas id="monthlyChart"></canvas>
+            </div>
+        </div>
+        
+        <!-- Failure Simulator Tab -->
+        <div id="simulator" class="tab-content">
+            <div class="control-panel">
+                <h2 style="margin-bottom: 20px;">Equipment Failure Simulator</h2>
+                <div class="control-row">
+                    <div class="control-group">
+                        <label>Equipment to Fail</label>
+                        <select id="failEquipment">
+                            <option value="VR_SU_L4">VR SU - Lane 4</option>
+                            <option value="VDC_SU_L3">VDC SU - Lane 3</option>
+                            <option value="CAMERA_L5">Camera 0 - Lane 5</option>
+                        </select>
+                    </div>
+                    <div class="control-group">
+                        <label>Failure Duration (minutes)</label>
+                        <input type="number" id="failDuration" value="30" min="5" max="480">
+                    </div>
+                    <div class="control-group">
+                        <label>Start Time</label>
+                        <input type="time" id="failStartTime" value="10:00">
+                    </div>
+                </div>
+                <div class="btn-group">
+                    <button class="btn btn-danger" onclick="startSimulation()">▶️ Start Simulation</button>
+                    <button class="btn btn-secondary" onclick="stopSimulation()">⏹️ Stop</button>
+                </div>
+            </div>
+            
+            <div id="simulationStatus"></div>
+            
+            <div class="chart-container">
+                <h3>Simulation Timeline</h3>
+                <canvas id="simulationChart"></canvas>
+            </div>
+            
+            <div class="chart-container">
+                <h3>Simulation Results</h3>
+                <div class="report-output" id="simulationResults"></div>
+            </div>
+        </div>
+        
+        <!-- Architecture Tab -->
+        <div id="architecture" class="tab-content">
+            <div class="architecture-diagram">
+                <h2 style="margin-bottom: 30px; color: #2a5298;">System Architecture</h2>
+                
+                <div class="arch-layer">
+                    <h3>📊 Data Layer</h3>
+                    <p>G2CDB (Historical) | G3C (Operational Logs) | MCON (Live Feed)</p>
+                </div>
+                
+                <div class="arch-arrow">⬇️</div>
+                
+                <div class="arch-layer">
+                    <h3>🔄 ETL & Integration Layer</h3>
+                    <p>Data Normalization | Timestamp Sync | Multi-DB Query Engine</p>
+                </div>
+                
+                <div class="arch-arrow">⬇️</div>
+                
+                <div class="arch-layer">
+                    <h3>🧮 Analysis Engine</h3>
+                    <p>Equipment Health Monitor | Passage Comparator | Revenue Estimator</p>
+                </div>
+                
+                <div class="arch-arrow">⬇️</div>
+                
+                <div class="arch-layer">
+                    <h3>📈 Visualization Layer</h3>
+                    <p>Real-time Dashboard | Report Generator | Alert System</p>
+                </div>
+            </div>
+            
+            <div class="chart-container" style="margin-top: 30px;">
+                <h3>Key Schema Relationships</h3>
+                <div class="report-output">
+                    <h4>G3C Database - Core Tables:</h4>
+                    <ul style="line-height: 2;">
+                        <li><strong>dbo.G3CDeviceStatus</strong> - Equipment health & status tracking</li>
+                        <li><strong>dbo.G3CPassagesOverallClass</strong> - Vehicle passages by class</li>
+                        <li><strong>dbo.G3CLatestPassageTransactions</strong> - Real-time transaction data</li>
+                        <li><strong>dbo.G3CNoReads</strong> - Failed reads & equipment issues</li>
+                        <li><strong>dbo.G3CCamera0</strong> - Camera failure events</li>
+                        <li><strong>dbo.G3CITTDetail</strong> - ITT device transaction logs</li>
+                        <li><strong>dbo.G3CMatchingOCR</strong> - OCR matching performance</li>
+                    </ul>
+                    
+                    <h4 style="margin-top: 20px;">Key Relationships:</h4>
+                    <ul style="line-height: 2;">
+                        <li>Lane ID → Device Status → Equipment Health</li>
+                        <li>Gantry ID → Passages → Transactions → Revenue</li>
+                        <li>Timestamp → Historical Baseline → Real-time Comparison</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Global State
+        let currentTab = 'dashboard';
+        let simulationInterval = null;
+        let charts = {};
+        
+        // Initialize Dashboard
+        function initializeDashboard() {
+            loadEquipmentData();
+            createPassageChart();
+            createRevenueLossChart();
+            createMonthlyChart();
+            createSimulationChart();
+        }
+        
+        // Tab Switching
+        function switchTab(tabName) {
+            document.querySelectorAll('.tab-content').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            document.querySelectorAll('.nav-tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            
+            document.getElementById(tabName).classList.add('active');
+            event.target.classList.add('active');
+            currentTab = tabName;
+        }
+        
+        // Equipment Data
+        function loadEquipmentData() {
+            const equipment = [
+                { id: 'VR_SU_001', type: 'VR SU', lane: 1, status: 'Online', uptime: '99.8%', lastUpdate: '2 min ago' },
+                { id: 'VR_SU_002', type: 'VR SU', lane: 2, status: 'Online', uptime: '99.9%', lastUpdate: '1 min ago' },
+                { id: 'VR_SU_003', type: 'VR SU', lane: 3, status: 'Online', uptime: '98.5%', lastUpdate: '3 min ago' },
+                { id: 'VR_SU_004', type: 'VR SU', lane: 4, status: 'Offline', uptime: '92.1%', lastUpdate: '45 min ago' },
+                { id: 'VDC_SU_001', type: 'VDC SU', lane: 5, status: 'Warning', uptime: '96.3%', lastUpdate: '5 min ago' }
+            ];
+            
+            const tbody = document.getElementById('equipmentTable');
+            tbody.innerHTML = equipment.map(eq => `
+                <tr>
+                    <td>${eq.id}</td>
+                    <td>${eq.type}</td>
+                    <td>Lane ${eq.lane}</td>
+                    <td>
+                        <span class="status-indicator status-${eq.status.toLowerCase()}"></span>
+                        ${eq.status}
+                    </td>
+                    <td>${eq.lastUpdate}</td>
+                    <td>${eq.uptime}</td>
+                </tr>
+            `).join('');
+        }
+        
+        // Create Passage Chart
+        function createPassageChart() {
+            const ctx = document.getElementById('passageChart').getContext('2d');
+            const hours = Array.from({length: 24}, (_, i) => `${i}:00`);
+            
+            charts.passage = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: hours,
+                    datasets: [
+                        {
+                            label: 'Historical Baseline',
+                            data: hours.map(() => Math.floor(Math.random() * 200) + 300),
+                            borderColor: '#667eea',
+                            backgroundColor: 'rgba(102, 126, 234, 0.1)',
+                            borderWidth: 2,
+                            tension: 0.4
+                        },
+                        {
+                            label: 'Real-time (Today)',
+                            data: hours.map((h, i) => i === 10 ? 150 : Math.floor(Math.random() * 200) + 300),
+                            borderColor: '#dc3545',
+                            backgroundColor: 'rgba(220, 53, 69, 0.1)',
+                            borderWidth: 2,
+                            tension: 0.4
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: true,
+                    aspectRatio: 2.5,
+                    plugins: {
+                        legend: {
+                            display: true,
+                            position: 'top'
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            title: {
+                                display: true,
+                                text: 'Passages per Hour'
+                            }
+                        }
+                    }
+                }
+            });
+        }
+        
+        // Create Revenue Loss Chart
+        function createRevenueLossChart() {
+            const ctx = document.getElementById('revenueLossChart').getContext('2d');
+            
+            charts.revenue = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: ['09:00-10:00', '10:00-11:00', '11:00-12:00', '12:00-13:00', '13:00-14:00'],
+                    datasets: [{
+                        label: 'Revenue Loss ($AUD)',
+                        data: [0, 850, 1200, 400, 0],
+                        backgroundColor: [
+                            'rgba(40, 167, 69, 0.7)',
+                            'rgba(220, 53, 69, 0.7)',
+                            'rgba(220, 53, 69, 0.7)',
+                            'rgba(255, 193, 7, 0.7)',
+                            'rgba(40, 167, 69, 0.7)'
+                        ],
+                        borderColor: [
+                            '#28a745',
+                            '#dc3545',
+                            '#dc3545',
+                            '#ffc107',
+                            '#28a745'
+                        ],
+                        borderWidth: 2
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: true,
+                    aspectRatio: 2.5,
+                    plugins: {
+                        legend: {
+                            display: true
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            title: {
+                                display: true,
+                                text: 'Revenue Loss (AUD)'
+                            }
+                        }
+                    }
+                }
+            });
+        }
+        
+        // Create Monthly Chart
+        function createMonthlyChart() {
+            const ctx = document.getElementById('monthlyChart').getContext('2d');
+            const days = Array.from({length: 31}, (_, i) => `Day ${i + 1}`);
+            
+            charts.monthly = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: days,
+                    datasets: [{
+                        label: 'Daily Passages',
+                        data: days.map(() => Math.floor(Math.random() * 5000) + 10000),
+                        borderColor: '#667eea',
+                        backgroundColor: 'rgba(102, 126, 234, 0.1)',
+                        borderWidth: 2,
+                        tension: 0.4,
+                        fill: true
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: true,
+                    aspectRatio: 2.5,
+                    plugins: {
+                        legend: {
+                            display: true
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            title: {
+                                display: true,
+                                text: 'Total Passages'
+                            }
+                        }
+                    }
+                }
+            });
+        }
+        
+        // Create Simulation Chart
+        function createSimulationChart() {
+            const ctx = document.getElementById('simulationChart').getContext('2d');
+            const timeline = Array.from({length: 60}, (_, i) => `${i} min`);
+            
+            charts.simulation = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: timeline,
+                    datasets: [
+                        {
+                            label: 'Equipment Status (1=Online, 0=Offline)',
+                            data: timeline.map((_, i) => i >= 10 && i < 40 ? 0 : 1),
+                            borderColor: '#dc3545',
+                            backgroundColor: 'rgba(220, 53, 69, 0.1)',
+                            borderWidth: 3,
+                            stepped: true
+                        },
+                        {
+                            label: 'Passage Rate (normalized)',
+                            data: timeline.map((_, i) => i >= 10 && i < 40 ? 0.3 : 1),
+                            borderColor: '#667eea',
+                            backgroundColor: 'rgba(102, 126, 234, 0.1)',
+                            borderWidth: 2,
+                            tension: 0.4
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: true,
+                    aspectRatio: 2.5,
+                    plugins: {
+                        legend: {
+                            display: true
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            max: 1.2,
+                            title: {
+                                display: true,
+                                text: 'Status / Rate'
+                            }
+                        }
+                    }
+                }
+            });
+        }
+        
+        // Dashboard Functions
+        function refreshDashboard() {
+            const alert = document.createElement('div');
+            alert.className = 'alert alert-success';
+            alert.textContent = '✓ Dashboard refreshed successfully at ' + new Date().toLocaleTimeString();
+            document.getElementById('dashboard').insertBefore(alert, document.getElementById('dashboard').firstChild);
+            
+            setTimeout(() => alert.remove(), 3000);
+            loadEquipmentData();
+        }
+        
+        function exportReport() {
+            const report = {
+                timestamp: new Date().toISOString(),
+                road: document.getElementById('roadSelect').options[document.getElementById('roadSelect').selectedIndex].text,
+                gantry: document.getElementById('gantrySelect').value,
+                lane: document.getElementById('laneSelect').value,
+                totalPassages: 12847,
+                activeLanes: 4,
+                healthScore: 92,
+                revenueLoss: 2450
+            };
+            
+            const blob = new Blob([JSON.stringify(report, null, 2)], {type: 'application/json'});
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `gantry-report-${Date.now()}.json`;
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+        
+        // Revenue Analysis
+        function runRevenueAnalysis() {
+            const alertDiv = document.getElementById('analysisAlert');
+            alertDiv.innerHTML = '<div class="alert alert-warning">🔍 Analyzing revenue impact across selected time period...</div>';
+            
+            setTimeout(() => {
+                alertDiv.innerHTML = '<div class="alert alert-danger">⚠️ Revenue loss detected: $2,450 AUD | Lane 4 VR SU failure | Duration: 1 hour</div>';
+                
+                const analysisData = [
+                    { time: '10:00-11:00', lane: 4, equipment: 'VR SU', expected: 450, actual: 180, variance: -270, loss: '$1,200' },
+                    { time: '11:00-12:00', lane: 4, equipment: 'VR SU', expected: 520, actual: 320, variance: -200, loss: '$850' },
+                    { time: '12:00-13:00', lane: 4, equipment: 'VR SU', expected: 480, actual: 390, variance: -90, loss: '$400' }
+                ];
+                
+                const tbody = document.getElementById('analysisTable');
+                tbody.innerHTML = analysisData.map(row => `
+                    <tr>
+                        <td>${row.time}</td>
+                        <td>Lane ${row.lane}</td>
+                        <td>${row.equipment}</td>
+                        <td>${row.expected}</td>
+                        <td>${row.actual}</td>
+                        <td style="color: ${row.variance < 0 ? '#dc3545' : '#28a745'}">${row.variance}</td>
+                        <td style="font-weight: bold; color: #dc3545">${row.loss}</td>
+                    </tr>
+                `).join('');
+            }, 1500);
+        }
+        
+        function simulateFailure() {
+            const alertDiv = document.getElementById('analysisAlert');
+            alertDiv.innerHTML = '<div class="alert alert-danger">🚨 Simulating VR SU failure on Lane 4 from 10:00-11:00...</div>';
+            
+            setTimeout(() => {
+                runRevenueAnalysis();
+            }, 2000);
+        }
+        
+        // Monthly Reports
+        function generateReportQuery() {
+            const roadId = document.getElementById('reportRoadId').value;
+            const month = document.getElementById('reportMonth').value;
+            const reportType = document.getElementById('reportType').value;
+            
+            const [year, monthNum] = month.split('-');
+            const daysInMonth = new Date(year, monthNum, 0).getDate();
+            const dateFrom = `${year}${monthNum}01`;
+            const dateTo = `${year}${monthNum}${daysInMonth}`;
+            
+            const reportProcedures = {
+                'NoReads': 'Report_Monthly_G3C_Keams_NoReads',
+                'Camera0': 'Report_Monthly_G3C_Keams_Camera0',
+                'Class0': 'Report_Monthly_G3C_Keams_Class0',
+                'ITT': 'Report_Monthly_G3C_Keams_ITT',
+                'MatchingOCR': 'Report_Monthly_G3C_Keams_MatchingOCR',
+                'PassagesAndTransactions': 'Report_Monthly_G3C_Keams_PassagesAndTransactions',
+                'PassagesByDay': 'Report_Monthly_G3C_Keams_PassagesByDay',
+                'TransactionsByDay': 'Report_Monthly_G3C_Keams_TransactionsByDay',
+                'PEC': 'Report_Monthly_G3C_Keams_PEC',
+                'UnmatchTags': 'Report_Monthly_G3C_Keams_UnmatchTags'
+            };
+            
+            const procedure = reportProcedures[reportType];
+            
+            const query = `-- Monthly Report Query Generator
+-- Road: ${document.getElementById('reportRoadId').options[document.getElementById('reportRoadId').selectedIndex].text}
+-- Period: ${month}
+-- Report Type: ${reportType}
+
+DECLARE @DateFrom datetime = '${dateFrom}'
+DECLARE @DateTo datetime = '${dateTo}'
+DECLARE @roadid int = ${roadId}
+DECLARE @arraydatetime ArrayOfDateTime
+
+-- Execute Report Procedure
+EXEC [dbo].[${procedure}] @roadID, @DateFrom, @DateTo, @arraydatetime
+
+-- Additional Analysis Queries:
+-- Get equipment status for the period
+SELECT 
+    DeviceID,
+    LaneID,
+    StatusCode,
+    COUNT(*) as StatusCount,
+    MIN(Timestamp) as FirstOccurrence,
+    MAX(Timestamp) as LastOccurrence
+FROM dbo.G3CDeviceStatus
+WHERE Timestamp BETWEEN @DateFrom AND @DateTo
+GROUP BY DeviceID, LaneID, StatusCode
+ORDER BY StatusCount DESC
+
+-- Get passage volume by day
+SELECT 
+    CAST(PassageTime as DATE) as PassageDate,
+    LaneID,
+    COUNT(*) as TotalPassages,
+    SUM(CASE WHEN VehicleClass = 0 THEN 1 ELSE 0 END) as Class0Count
+FROM dbo.G3CPassagesOverallClass
+WHERE PassageTime BETWEEN @DateFrom AND @DateTo
+GROUP BY CAST(PassageTime as DATE), LaneID
+ORDER BY PassageDate, LaneID`;
+            
+            document.getElementById('sqlQuery').textContent = query;
+        }
+        
+        function simulateReportData() {
+            generateReportQuery();
+            generateSampleCsv();
+            
+            setTimeout(() => {
+                parseCsvData();
+            }, 500);
+        }
+        
+        function generateSampleCsv() {
+            const reportType = document.getElementById('reportType').value;
+            let csv = '';
+            
+            if (reportType === 'PassagesByDay') {
+                csv = 'Date,Lane1,Lane2,Lane3,Lane4,Lane5\n';
+                for (let day = 1; day <= 31; day++) {
+                    const date = `2025-05-${String(day).padStart(2, '0')}`;
+                    const values = Array.from({length: 5}, () => Math.floor(Math.random() * 2000) + 8000);
+                    csv += `${date},${values.join(',')}\n`;
+                }
+            } else if (reportType === 'NoReads') {
+                csv = 'Hour,NoReads,TotalPassages,Percentage\n';
+                for (let hour = 0; hour < 24; hour++) {
+                    const total = Math.floor(Math.random() * 500) + 300;
+                    const noReads = Math.floor(total * (Math.random() * 0.05));
+                    const pct = ((noReads / total) * 100).toFixed(2);
+                    csv += `${hour}:00,${noReads},${total},${pct}%\n`;
+                }
+            } else {
+                csv = 'Day,Value1,Value2,Value3\n';
+                for (let i = 1; i <= 31; i++) {
+                    csv += `Day${i},${Math.floor(Math.random() * 1000)},${Math.floor(Math.random() * 1000)},${Math.floor(Math.random() * 1000)}\n`;
+                }
+            }
+            
+            document.getElementById('csvData').value = csv;
+        }
+        
+        function parseCsvData() {
+            const csvText = document.getElementById('csvData').value;
+            if (!csvText.trim()) {
+                alert('Please enter or generate CSV data first');
+                return;
+            }
+            
+            const lines = csvText.trim().split('\n');
+            const headers = lines[0].split(',');
+            const data = lines.slice(1).map(line => line.split(','));
+            
+            const labels = data.map(row => row[0]);
+            const datasets = [];
+            
+            const colors = ['#667eea', '#764ba2', '#f093fb', '#4facfe', '#43e97b'];
+            
+            for (let i = 1; i < headers.length; i++) {
+                datasets.push({
+                    label: headers[i],
+                    data: data.map(row => parseFloat(row[i]) || 0),
+                    borderColor: colors[i % colors.length],
+                    backgroundColor: colors[i % colors.length] + '20',
+                    borderWidth: 2,
+                    tension: 0.4
+                });
+            }
+            
+            if (charts.monthly) {
+                charts.monthly.destroy();
+            }
+            
+            const ctx = document.getElementById('monthlyChart').getContext('2d');
+            charts.monthly = new Chart(ctx, {
+                type: 'line',
+                data: { labels, datasets },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: true,
+                    aspectRatio: 2.5,
+                    plugins: {
+                        legend: { display: true, position: 'top' }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            title: { display: true, text: 'Values' }
+                        }
+                    }
+                }
+            });
+        }
+        
+        // Simulation Functions
+        function startSimulation() {
+            const equipment = document.getElementById('failEquipment').value;
+            const duration = document.getElementById('failDuration').value;
+            const startTime = document.getElementById('failStartTime').value;
+            
+            const statusDiv = document.getElementById('simulationStatus');
+            statusDiv.innerHTML = `
+                <div class="alert alert-danger">
+                    🚨 <strong>Simulation Active</strong><br>
+                    Equipment: ${equipment}<br>
+                    Duration: ${duration} minutes<br>
+                    Start Time: ${startTime}<br>
+                    Status: Equipment failure in progress...
+                </div>
+            `;
+            
+            const resultsDiv = document.getElementById('simulationResults');
+            let elapsedMinutes = 0;
+            
+            simulationInterval = setInterval(() => {
+                elapsedMinutes++;
+                
+                const missedPassages = Math.floor(Math.random() * 10) + 5;
+                const estimatedLoss = missedPassages * 4.50;
+                
+                resultsDiv.innerHTML = `
+                    <h4>Live Simulation Results</h4>
+                    <p><strong>Elapsed Time:</strong> ${elapsedMinutes} minutes</p>
+                    <p><strong>Cumulative Missed Passages:</strong> ${elapsedMinutes * 8}</p>
+                    <p><strong>Estimated Revenue Loss:</strong> ${(elapsedMinutes * 36).toFixed(2)} AUD</p>
+                    <p><strong>Average Passage Loss Rate:</strong> 8 vehicles/minute</p>
+                    <hr>
+                    <h4>Historical Comparison</h4>
+                    <p><strong>Normal Rate (same time last week):</strong> 450 passages/hour</p>
+                    <p><strong>Current Rate:</strong> ${Math.max(0, 450 - (elapsedMinutes * 8))} passages/hour</p>
+                    <p><strong>Variance:</strong> -${Math.min(100, (elapsedMinutes / duration * 100).toFixed(1))}%</p>
+                `;
+                
+                if (elapsedMinutes >= duration) {
+                    stopSimulation();
+                    statusDiv.innerHTML = `
+                        <div class="alert alert-success">
+                            ✓ <strong>Simulation Complete</strong><br>
+                            Equipment: ${equipment}<br>
+                            Total Duration: ${duration} minutes<br>
+                            Total Revenue Loss: ${(duration * 36).toFixed(2)} AUD<br>
+                            Status: Equipment restored to normal operation
+                        </div>
+                    `;
+                }
+            }, 1000);
+        }
+        
+        function stopSimulation() {
+            if (simulationInterval) {
+                clearInterval(simulationInterval);
+                simulationInterval = null;
+            }
+        }
+        
+        // Initialize on page load
+        window.addEventListener('load', initializeDashboard);
+    </script>
+</body>
+</html>
