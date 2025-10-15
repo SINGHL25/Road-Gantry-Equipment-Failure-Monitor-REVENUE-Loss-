@@ -1,0 +1,773 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gantry Equipment Failure Monitor</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1600px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            font-size: 1.1em;
+            opacity: 0.9;
+        }
+
+        .controls {
+            background: #f8f9fa;
+            padding: 25px;
+            border-bottom: 3px solid #e9ecef;
+        }
+
+        .control-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+        }
+
+        .control-group {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .control-group label {
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: #495057;
+            font-size: 0.9em;
+        }
+
+        .control-group select,
+        .control-group input {
+            padding: 10px;
+            border: 2px solid #ced4da;
+            border-radius: 8px;
+            font-size: 0.95em;
+            transition: all 0.3s;
+        }
+
+        .control-group select:focus,
+        .control-group input:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .btn {
+            padding: 12px 30px;
+            border: none;
+            border-radius: 8px;
+            font-size: 1em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background: #5a6268;
+        }
+
+        .dashboard {
+            padding: 30px;
+        }
+
+        .status-cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .status-card {
+            background: white;
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.08);
+            border-left: 5px solid #667eea;
+            transition: all 0.3s;
+        }
+
+        .status-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+        }
+
+        .status-card.alert {
+            border-left-color: #dc3545;
+            background: #fff5f5;
+        }
+
+        .status-card.warning {
+            border-left-color: #ffc107;
+            background: #fffbf0;
+        }
+
+        .status-card.success {
+            border-left-color: #28a745;
+            background: #f0fff4;
+        }
+
+        .status-card h3 {
+            font-size: 0.9em;
+            color: #6c757d;
+            margin-bottom: 10px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .status-card .value {
+            font-size: 2.5em;
+            font-weight: bold;
+            color: #2c3e50;
+        }
+
+        .status-card .change {
+            font-size: 0.9em;
+            margin-top: 8px;
+        }
+
+        .charts-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(500px, 1fr));
+            gap: 25px;
+            margin-bottom: 30px;
+        }
+
+        .chart-container {
+            background: white;
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.08);
+        }
+
+        .chart-container h3 {
+            margin-bottom: 20px;
+            color: #2c3e50;
+            font-size: 1.2em;
+        }
+
+        .data-table {
+            background: white;
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.08);
+            overflow-x: auto;
+        }
+
+        .data-table h3 {
+            margin-bottom: 20px;
+            color: #2c3e50;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 12px;
+            text-align: left;
+            font-weight: 600;
+            text-transform: uppercase;
+            font-size: 0.85em;
+            letter-spacing: 0.5px;
+        }
+
+        td {
+            padding: 12px;
+            border-bottom: 1px solid #e9ecef;
+        }
+
+        tr:hover {
+            background: #f8f9fa;
+        }
+
+        .status-badge {
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 0.85em;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .status-online {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .status-offline {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .status-degraded {
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        .timeline {
+            background: white;
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.08);
+            margin-bottom: 30px;
+        }
+
+        .timeline h3 {
+            margin-bottom: 20px;
+            color: #2c3e50;
+        }
+
+        .timeline-item {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 20px;
+            padding: 15px;
+            border-left: 3px solid #667eea;
+            background: #f8f9fa;
+            border-radius: 8px;
+        }
+
+        .timeline-item.failure {
+            border-left-color: #dc3545;
+        }
+
+        .timeline-time {
+            font-weight: 600;
+            color: #667eea;
+            min-width: 100px;
+        }
+
+        .timeline-content {
+            flex: 1;
+        }
+
+        .revenue-impact {
+            background: linear-gradient(135deg, #ff6b6b 0%, #c92a2a 100%);
+            color: white;
+            padding: 30px;
+            border-radius: 12px;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .revenue-impact h2 {
+            font-size: 1.5em;
+            margin-bottom: 15px;
+        }
+
+        .revenue-impact .amount {
+            font-size: 3.5em;
+            font-weight: bold;
+            margin: 10px 0;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #6c757d;
+        }
+
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🚧 Gantry Equipment Failure Monitor</h1>
+            <p>Real-time Equipment Health & Revenue Impact Analysis</p>
+        </div>
+
+        <div class="controls">
+            <div class="control-grid">
+                <div class="control-group">
+                    <label>Road Selection</label>
+                    <select id="roadSelect">
+                        <option value="1">ED - Eastern Distributor</option>
+                        <option value="2">LCT - Lane Cove Tunnel</option>
+                        <option value="3">M2 - Hills M2</option>
+                        <option value="6">M5 - M5 South West</option>
+                        <option value="7">CLEM7 - Clem7 Tunnel</option>
+                        <option value="12" selected>GLM - Go Between Bridge</option>
+                        <option value="14">M4W - WestConnex M4</option>
+                        <option value="21">M7 - Westlink M7</option>
+                        <option value="22">M8 - WestConnex M8</option>
+                    </select>
+                </div>
+
+                <div class="control-group">
+                    <label>Date From</label>
+                    <input type="date" id="dateFrom" value="2025-05-01">
+                </div>
+
+                <div class="control-group">
+                    <label>Date To</label>
+                    <input type="date" id="dateTo" value="2025-05-31">
+                </div>
+
+                <div class="control-group">
+                    <label>Gantry ID</label>
+                    <select id="gantrySelect">
+                        <option value="101">Gantry 101</option>
+                        <option value="102">Gantry 102</option>
+                        <option value="103">Gantry 103</option>
+                        <option value="104">Gantry 104</option>
+                    </select>
+                </div>
+
+                <div class="control-group">
+                    <label>Lane ID</label>
+                    <select id="laneSelect">
+                        <option value="all">All Lanes</option>
+                        <option value="1">Lane 1</option>
+                        <option value="2">Lane 2</option>
+                        <option value="3">Lane 3</option>
+                        <option value="4">Lane 4</option>
+                        <option value="5">Lane 5</option>
+                    </select>
+                </div>
+
+                <div class="control-group">
+                    <label>Report Type</label>
+                    <select id="reportType">
+                        <option value="NoReads">No Reads Analysis</option>
+                        <option value="Camera0">Camera 0 Failures</option>
+                        <option value="ITT">ITT Performance</option>
+                        <option value="PassagesTransactions">Passages vs Transactions</option>
+                        <option value="MatchingOCR">OCR Matching Rate</option>
+                    </select>
+                </div>
+
+                <div class="control-group" style="display: flex; gap: 10px; align-items: flex-end;">
+                    <button class="btn btn-primary" onclick="analyzeFailure()">🔍 Analyze Failure</button>
+                    <button class="btn btn-secondary" onclick="simulateFailure()">⚡ Simulate Event</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="dashboard">
+            <div class="revenue-impact">
+                <h2>Estimated Revenue Loss</h2>
+                <div class="amount" id="revenueLoss">$0</div>
+                <p>Based on current equipment failures and missed transactions</p>
+            </div>
+
+            <div class="status-cards">
+                <div class="status-card alert">
+                    <h3>Failed Equipment</h3>
+                    <div class="value" id="failedEquipment">0</div>
+                    <div class="change">VR SU, VDC SU offline</div>
+                </div>
+
+                <div class="status-card warning">
+                    <h3>Missed Passages</h3>
+                    <div class="value" id="missedPassages">0</div>
+                    <div class="change">vs historical baseline</div>
+                </div>
+
+                <div class="status-card warning">
+                    <h3>Lost Transactions</h3>
+                    <div class="value" id="lostTransactions">0</div>
+                    <div class="change">requiring recovery</div>
+                </div>
+
+                <div class="status-card success">
+                    <h3>Active Lanes</h3>
+                    <div class="value" id="activeLanes">0</div>
+                    <div class="change">operational status</div>
+                </div>
+            </div>
+
+            <div class="timeline">
+                <h3>📋 Equipment Failure Timeline</h3>
+                <div id="timelineContainer"></div>
+            </div>
+
+            <div class="charts-grid">
+                <div class="chart-container">
+                    <h3>📊 Passage Comparison: Historical vs Real-time</h3>
+                    <canvas id="passageChart"></canvas>
+                </div>
+
+                <div class="chart-container">
+                    <h3>💰 Transaction Comparison</h3>
+                    <canvas id="transactionChart"></canvas>
+                </div>
+
+                <div class="chart-container">
+                    <h3>🔧 Equipment Health Status</h3>
+                    <canvas id="equipmentChart"></canvas>
+                </div>
+
+                <div class="chart-container">
+                    <h3>📈 Revenue Impact by Hour</h3>
+                    <canvas id="revenueChart"></canvas>
+                </div>
+            </div>
+
+            <div class="data-table">
+                <h3>📑 Detailed Failure Analysis Report</h3>
+                <table id="reportTable">
+                    <thead>
+                        <tr>
+                            <th>Timestamp</th>
+                            <th>Gantry</th>
+                            <th>Lane</th>
+                            <th>Equipment</th>
+                            <th>Status</th>
+                            <th>Duration</th>
+                            <th>Missed Vehicles</th>
+                            <th>Revenue Loss</th>
+                        </tr>
+                    </thead>
+                    <tbody id="reportTableBody"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Initialize charts
+        let passageChart, transactionChart, equipmentChart, revenueChart;
+
+        // Sample data structure
+        const sampleData = {
+            roads: {
+                12: {
+                    name: "GLM",
+                    gantries: {
+                        102: {
+                            lanes: [1, 2, 3, 4, 5],
+                            historicalPassages: [850, 920, 880, 910, 895, 870, 900],
+                            historicalTransactions: [825, 895, 855, 885, 870, 845, 875]
+                        }
+                    }
+                }
+            },
+            equipmentTypes: ['VR SU', 'VDC SU', 'Camera 0', 'ITT', 'OCR Reader'],
+            vehicleClasses: {
+                'Class 1': 4.50,
+                'Class 2': 8.75,
+                'Class 3': 13.25,
+                'Class 4': 18.50
+            }
+        };
+
+        function initializeCharts() {
+            const chartOptions = {
+                responsive: true,
+                maintainAspectRatio: true,
+                plugins: {
+                    legend: {
+                        position: 'top',
+                    }
+                }
+            };
+
+            // Passage Chart
+            const passageCtx = document.getElementById('passageChart').getContext('2d');
+            passageChart = new Chart(passageCtx, {
+                type: 'line',
+                data: {
+                    labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+                    datasets: [{
+                        label: 'Historical Baseline',
+                        data: [850, 920, 880, 910, 895, 870, 900],
+                        borderColor: '#667eea',
+                        backgroundColor: 'rgba(102, 126, 234, 0.1)',
+                        tension: 0.4,
+                        fill: true
+                    }, {
+                        label: 'Current (with failure)',
+                        data: [840, 910, 620, 900, 890, 865, 895],
+                        borderColor: '#dc3545',
+                        backgroundColor: 'rgba(220, 53, 69, 0.1)',
+                        tension: 0.4,
+                        fill: true
+                    }]
+                },
+                options: chartOptions
+            });
+
+            // Transaction Chart
+            const transactionCtx = document.getElementById('transactionChart').getContext('2d');
+            transactionChart = new Chart(transactionCtx, {
+                type: 'bar',
+                data: {
+                    labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+                    datasets: [{
+                        label: 'Expected Transactions',
+                        data: [825, 895, 855, 885, 870, 845, 875],
+                        backgroundColor: 'rgba(102, 126, 234, 0.7)'
+                    }, {
+                        label: 'Actual Transactions',
+                        data: [820, 890, 595, 880, 865, 840, 870],
+                        backgroundColor: 'rgba(220, 53, 69, 0.7)'
+                    }]
+                },
+                options: chartOptions
+            });
+
+            // Equipment Health Chart
+            const equipmentCtx = document.getElementById('equipmentChart').getContext('2d');
+            equipmentChart = new Chart(equipmentCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Online', 'Offline', 'Degraded'],
+                    datasets: [{
+                        data: [18, 2, 1],
+                        backgroundColor: ['#28a745', '#dc3545', '#ffc107']
+                    }]
+                },
+                options: {
+                    ...chartOptions,
+                    plugins: {
+                        legend: {
+                            position: 'right'
+                        }
+                    }
+                }
+            });
+
+            // Revenue Impact Chart
+            const revenueCtx = document.getElementById('revenueChart').getContext('2d');
+            revenueChart = new Chart(revenueCtx, {
+                type: 'line',
+                data: {
+                    labels: ['06:00', '08:00', '10:00', '12:00', '14:00', '16:00', '18:00', '20:00'],
+                    datasets: [{
+                        label: 'Revenue Loss ($)',
+                        data: [0, 0, 2850, 1950, 0, 0, 0, 0],
+                        borderColor: '#dc3545',
+                        backgroundColor: 'rgba(220, 53, 69, 0.2)',
+                        tension: 0.4,
+                        fill: true
+                    }]
+                },
+                options: chartOptions
+            });
+        }
+
+        function simulateFailure() {
+            // Simulate equipment failure scenario
+            const scenarios = [
+                {
+                    equipment: 'VR SU',
+                    lane: 5,
+                    gantry: 102,
+                    startTime: '10:00',
+                    endTime: '11:00',
+                    missedVehicles: 260,
+                    revenueLoss: 2850
+                },
+                {
+                    equipment: 'VDC SU',
+                    lane: 3,
+                    gantry: 102,
+                    startTime: '12:30',
+                    endTime: '13:45',
+                    missedVehicles: 178,
+                    revenueLoss: 1950
+                }
+            ];
+
+            const scenario = scenarios[Math.floor(Math.random() * scenarios.length)];
+            
+            // Update dashboard
+            document.getElementById('failedEquipment').textContent = '2';
+            document.getElementById('missedPassages').textContent = scenario.missedVehicles;
+            document.getElementById('lostTransactions').textContent = scenario.missedVehicles;
+            document.getElementById('activeLanes').textContent = '3/5';
+            document.getElementById('revenueLoss').textContent = `$${(scenario.revenueLoss + 1950).toLocaleString()}`;
+
+            // Update timeline
+            const timelineHTML = `
+                <div class="timeline-item failure">
+                    <div class="timeline-time">${scenario.startTime}</div>
+                    <div class="timeline-content">
+                        <strong>Equipment Failure Detected</strong><br>
+                        ${scenario.equipment} on Gantry ${scenario.gantry}, Lane ${scenario.lane}<br>
+                        Status: OFFLINE | Duration: ${calculateDuration(scenario.startTime, scenario.endTime)}
+                    </div>
+                </div>
+                <div class="timeline-item">
+                    <div class="timeline-time">${scenario.endTime}</div>
+                    <div class="timeline-content">
+                        <strong>Equipment Restored</strong><br>
+                        ${scenario.equipment} back online<br>
+                        Impact: ${scenario.missedVehicles} vehicles, $${scenario.revenueLoss.toLocaleString()} estimated loss
+                    </div>
+                </div>
+            `;
+            document.getElementById('timelineContainer').innerHTML = timelineHTML;
+
+            // Update table
+            updateReportTable(scenario);
+
+            // Show alert
+            alert(`⚠️ Failure Simulation Active\n\nEquipment: ${scenario.equipment}\nGantry: ${scenario.gantry}, Lane: ${scenario.lane}\nTime: ${scenario.startTime} - ${scenario.endTime}\n\nEstimated Loss: $${scenario.revenueLoss.toLocaleString()}`);
+        }
+
+        function analyzeFailure() {
+            const roadId = document.getElementById('roadSelect').value;
+            const dateFrom = document.getElementById('dateFrom').value;
+            const dateTo = document.getElementById('dateTo').value;
+            const gantryId = document.getElementById('gantrySelect').value;
+            const laneId = document.getElementById('laneSelect').value;
+            const reportType = document.getElementById('reportType').value;
+
+            // Simulate analysis
+            document.getElementById('failedEquipment').textContent = '2';
+            document.getElementById('missedPassages').textContent = '438';
+            document.getElementById('lostTransactions').textContent = '412';
+            document.getElementById('activeLanes').textContent = '3/5';
+            document.getElementById('revenueLoss').textContent = '$4,800';
+
+            // Update charts with analysis results
+            updateChartsWithAnalysis();
+
+            alert(`✅ Analysis Complete\n\nRoad: ${getRoadName(roadId)}\nPeriod: ${dateFrom} to ${dateTo}\nGantry: ${gantryId}\nLane: ${laneId === 'all' ? 'All Lanes' : 'Lane ' + laneId}\nReport: ${reportType}\n\nResults displayed in dashboard.`);
+        }
+
+        function updateChartsWithAnalysis() {
+            // Update passage chart with new data
+            passageChart.data.datasets[1].data = [840, 910, 620, 900, 890, 865, 895];
+            passageChart.update();
+
+            // Update transaction chart
+            transactionChart.data.datasets[1].data = [820, 890, 595, 880, 865, 840, 870];
+            transactionChart.update();
+
+            // Update revenue chart
+            revenueChart.data.datasets[0].data = [0, 0, 2850, 1950, 0, 0, 0, 0];
+            revenueChart.update();
+        }
+
+        function updateReportTable(scenario) {
+            const tbody = document.getElementById('reportTableBody');
+            const rows = `
+                <tr>
+                    <td>2025-05-15 ${scenario.startTime}:00</td>
+                    <td>Gantry ${scenario.gantry}</td>
+                    <td>Lane ${scenario.lane}</td>
+                    <td>${scenario.equipment}</td>
+                    <td><span class="status-badge status-offline">OFFLINE</span></td>
+                    <td>${calculateDuration(scenario.startTime, scenario.endTime)}</td>
+                    <td>${scenario.missedVehicles}</td>
+                    <td>$${scenario.revenueLoss.toLocaleString()}</td>
+                </tr>
+                <tr>
+                    <td>2025-05-15 12:30:00</td>
+                    <td>Gantry 102</td>
+                    <td>Lane 3</td>
+                    <td>VDC SU</td>
+                    <td><span class="status-badge status-offline">OFFLINE</span></td>
+                    <td>1h 15m</td>
+                    <td>178</td>
+                    <td>$1,950</td>
+                </tr>
+                <tr>
+                    <td>2025-05-14 08:15:00</td>
+                    <td>Gantry 101</td>
+                    <td>Lane 2</td>
+                    <td>Camera 0</td>
+                    <td><span class="status-badge status-degraded">DEGRADED</span></td>
+                    <td>45m</td>
+                    <td>42</td>
+                    <td>$462</td>
+                </tr>
+            `;
+            tbody.innerHTML = rows;
+        }
+
+        function calculateDuration(start, end) {
+            const startParts = start.split(':');
+            const endParts = end.split(':');
+            const startMinutes = parseInt(startParts[0]) * 60 + parseInt(startParts[1]);
+            const endMinutes = parseInt(endParts[0]) * 60 + parseInt(endParts[1]);
+            const diffMinutes = endMinutes - startMinutes;
+            const hours = Math.floor(diffMinutes / 60);
+            const minutes = diffMinutes % 60;
+            return hours > 0 ? `${hours}h ${minutes}m` : `${minutes}m`;
+        }
+
+        function getRoadName(roadId) {
+            const roads = {
+                '1': 'ED', '2': 'LCT', '3': 'M2', '6': 'M5', '7': 'CLEM7',
+                '12': 'GLM', '14': 'M4W', '21': 'M7', '22': 'M8'
+            };
+            return roads[roadId] || 'Unknown';
+        }
+
+        // Initialize on load
+        window.onload = function() {
+            initializeCharts();
+            simulateFailure();
+        };
+    </script>
+</body>
+</html>
